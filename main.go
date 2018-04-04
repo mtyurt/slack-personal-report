@@ -21,18 +21,22 @@ func (a TimeSortableMessages) Less(i, j int) bool {
 }
 
 func main() {
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
+		fmt.Printf("SLACK_TOKEN=your-token %s [OPTIONAL ARGUMENTS]\n---\n\n Optional Arguments:\n", os.Args[0])
+		flag.PrintDefaults()
+	}
+
 	daily := flag.Bool("daily", true, "To print only previous day's messages")
 	weekly := flag.Bool("weekly", false, "To print only previous week's messages")
 	short := flag.Bool("short", false, "Print only short output")
 	extraSearch := flag.String("extra-search", " ", "Default search mode is 'from:me', use this flag if you want extra conditions on top of it, e.g.: '-extra-search=in:#channel'; in the end the search filter will be: 'from:me in:#channel'")
 	flag.Parse()
-	fmt.Printf("searching slack, short: %v, weekly: %v, daily: %v, extra: %s, args:%v\n", *short, *weekly, *daily, *extraSearch, flag.Args())
-	if flag.NArg() == 0 {
-		os.Stderr.WriteString("Please specify an authentication token as argument!")
-		flag.Usage()
+	token := os.Getenv("SLACK_TOKEN")
+	if token == "" {
+		fmt.Println("You should specify SLACK_TOKEN as environment variable!")
 		os.Exit(1)
 	}
-	token := flag.Args()[0]
 	cli := slack.New(token)
 
 	msgs := getMessages(cli, *daily, *weekly, *extraSearch)
