@@ -28,6 +28,7 @@ func main() {
 	}
 
 	daily := flag.Bool("daily", true, "To print only previous day's messages")
+	days := flag.Int("days", 1, "Number of days to search for in daily mode. Because day search starts from midnight by Slack.")
 	weekly := flag.Bool("weekly", false, "To print only previous week's messages")
 	short := flag.Bool("short", false, "Print only short output")
 	extraSearch := flag.String("extra-search", " ", "Default search mode is 'from:me', use this flag if you want extra conditions on top of it, e.g.: '-extra-search=in:#channel'; in the end the search filter will be: 'from:me in:#channel'")
@@ -39,28 +40,28 @@ func main() {
 	}
 	cli := slack.New(token)
 
-	msgs := getMessages(cli, *daily, *weekly, *extraSearch)
+	msgs := getMessages(cli, *daily, *days, *weekly, *extraSearch)
 	msgMap := generateChannelMap(cli, msgs)
 
 	generalMsgSuffix := ""
 	if *weekly {
 		generalMsgSuffix = " since last week"
 	} else if *daily {
-		generalMsgSuffix = " since yesterday"
+		generalMsgSuffix = fmt.Sprintf(" since %d day/s ago", *days)
 	}
-	fmt.Println(*short)
 	fmt.Printf("You have posted %d messages in %d channels%s:\n", len(msgs), len(msgMap), generalMsgSuffix)
 
 	printOutMessages(cli, msgMap, *short)
 }
 
-func getMessages(cli *slack.Client, daily bool, weekly bool, extraSearch string) []slack.SearchMessage {
+func getMessages(cli *slack.Client, daily bool, days int, weekly bool, extraSearch string) []slack.SearchMessage {
 	searchParams := slack.SearchParameters{Sort: "timestamp", Count: 20, Highlight: true}
 	if weekly {
 		lastWeek := time.Now().Add(time.Hour * 24 * -7).Format("2006-01-02")
 		extraSearch = "after:" + lastWeek + " " + extraSearch
-	} else if weekly {
-		extraSearch = "after:Yesterday " + extraSearch
+	} else if daily {
+		yesterday := time.Now().Add(time.Hour * -24 * time.Duration(days)).Format("2006-01-02")
+		extraSearch = "after:" + yesterday + " " + extraSearch
 	}
 	resp, err := cli.SearchMessages("from:me "+extraSearch, searchParams)
 	if err != nil {
@@ -113,6 +114,7 @@ func addMessageToMap(msg *slack.SearchMessage, channelName string, msgMap map[st
 	msgList = append(msgList, *msg)
 	msgMap[channelName] = msgList
 }
+
 func convertStrTimestampToTime(timestamp string) time.Time {
 	ts := strings.Split(timestamp, ".")
 	var tsSec, tsNsec int
