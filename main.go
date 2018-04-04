@@ -20,10 +20,12 @@ func (a TimeSortableMessages) Less(i, j int) bool {
 	return convertStrTimestampToTime(a[i].Timestamp).Before(convertStrTimestampToTime(a[j].Timestamp))
 }
 
+var users map[string]*slack.User
+
 func main() {
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
-		fmt.Printf("SLACK_TOKEN=your-token %s [OPTIONAL ARGUMENTS]\n---\n\n Optional Arguments:\n", os.Args[0])
+		fmt.Printf("SLACK_TOKEN=your-token %s [OPTIONAL ARGUMENTS]\n\n   Optional Arguments:\n", os.Args[0])
 		flag.PrintDefaults()
 	}
 
@@ -39,6 +41,8 @@ func main() {
 		os.Exit(1)
 	}
 	cli := slack.New(token)
+
+	users = make(map[string]*slack.User)
 
 	msgs := getMessages(cli, *daily, *days, *weekly, *extraSearch)
 	msgMap := generateChannelMap(cli, msgs)
@@ -128,17 +132,23 @@ func convertStrTimestampToTime(timestamp string) time.Time {
 	return time.Unix(int64(tsSec), int64(tsNsec))
 
 }
+
 func normalizeTimestamp(timestamp string) string {
 	return convertStrTimestampToTime(timestamp).Format("Jan 2 15:04")
 }
+
 func normalizeChannelName(cli *slack.Client, ctxChannel slack.CtxChannel) string {
 	name := ctxChannel.Name
 	if strings.HasPrefix(name, "U") {
+		if user, ok := users[name]; ok {
+			return user.Name
+		}
 		user, err := cli.GetUserInfo(name)
 		if err != nil {
 			fmt.Printf("User is not found! channel: %v", ctxChannel)
 			panic(err)
 		}
+		users[name] = user
 		return user.Name
 	} else if strings.HasPrefix(name, "mpdm") {
 		name = name[5 : len(name)-2]
