@@ -35,7 +35,28 @@ Usage
 -----
 This program can be run with simply:
 
-```bash
-$ slack-personal-report your-auth-token
+
+```
+Usage of slack-personal-report:
+SLACK_TOKEN=your-token slack-personal-report [OPTIONAL ARGUMENTS]
+
+  Optional Arguments:
+  -daily
+        To print only previous day's messages (default true)
+  -days int
+        Number of days to search for in daily mode. Because day search starts
+		from midnight by Slack. (default 1)
+  -extra-search string
+        Default search mode is 'from:me', use this flag if you want extra
+		conditions on top of it, e.g.: '-extra-search=in:#channel'; in the end
+		the search filter will be: 'from:me in:#channel' (default " ")
+  -short
+        Print only short output (default false)
+  -weekly
+        To print only previous week's messages (default false)
 ```
 
+Future Work
+-----
+- Replace mentions in text with actual usernames / channel names
+- Colorful terminal output with optional flag
