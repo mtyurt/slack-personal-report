@@ -37,6 +37,7 @@ This program can be run with simply:
 
 
 ```
+$ ./slack-personal-report -help
 Usage of slack-personal-report:
 SLACK_TOKEN=your-token slack-personal-report [OPTIONAL ARGUMENTS]
 
